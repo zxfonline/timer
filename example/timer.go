@@ -14,7 +14,6 @@ func randInt(min int32, max int32) int32 {
 }
 
 func main() {
-	SysTimer := timer.NewTimer("", nil)
 	//	for i := 0; i < 1; i++ {
 	//		//		go func() {
 	//		obj := &Obj{
@@ -22,16 +21,16 @@ func main() {
 	//			t1:   T1{name: fmt.Sprintf("t1_%d", i+1)},
 	//			t2:   T2{name: fmt.Sprintf("t2_%d", i+1)},
 	//		}
-	//		ev := SysTimer.AddTimerEvent(taskexcutor.NewTaskService(obj.t1.Processing), fmt.Sprintf("name1_%d", i+1), 0, time.Duration((100+int(randInt(1, 50))*i)*1e6), 10-i, true)
+	//		ev := timer.AddTimerEvent(taskexcutor.NewTaskService(obj.t1.Processing), fmt.Sprintf("name1_%d", i+1), 0, time.Duration((100+int(randInt(1, 50))*i)*1e6), 10-i, true)
 	//		obj.t1.event = ev
-	//		ev = SysTimer.AddTimerEvent(taskexcutor.NewTaskService(obj.t2.Processing), fmt.Sprintf("name2_%d", i+1), 0, time.Duration((100+20*i)*1e6), 10-i, true)
+	//		ev = timer.AddTimerEvent(taskexcutor.NewTaskService(obj.t2.Processing), fmt.Sprintf("name2_%d", i+1), 0, time.Duration((100+20*i)*1e6), 10-i, true)
 	//		obj.t2.event = ev
 	//		//		}()
 	//	}
 	//	time.Sleep(5 * time.Second)
 	t3 := &T3{name: "t3_1"}
-	//	ev3 := SysTimer.AddTimerEvent(taskexcutor.NewTaskService(t3.Processing), "name3_1", 0, time.Duration((100)*1e6), 3, true)
-	ev3 := SysTimer.AddTimerEvent(taskexcutor.NewTaskService(func(params ...interface{}) {
+	//	ev3 := timer.AddTimerEvent(taskexcutor.NewTaskService(t3.Processing), "name3_1", 0, time.Duration((100)*1e6), 3, true)
+	ev3 := timer.AddTimerEvent(taskexcutor.NewTaskService(func(params ...interface{}) {
 		event := (params[0])
 		ev := (params[0]).(*timer.TimerEvent)
 		if ev.Closed() {

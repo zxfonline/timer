@@ -12,13 +12,14 @@ import (
 	"github.com/zxfonline/taskexcutor"
 )
 
-func Nanoseconds() int64 {
+const (
+	forever      = 1 << 62
+	maxSleepTime = 1e9
+)
+
+func nanoseconds() int64 {
 	return time.Now().UnixNano()
 }
-
-const forever = 1 << 62
-
-const maxSleepTime = 1e9
 
 type Timer struct {
 	Logger         *golog.Logger
@@ -28,13 +29,22 @@ type Timer struct {
 	currentSleeper int64
 }
 
-//var SysTimer = NewTimer("",nil)
+var GTimer = NewTimer(nil, nil)
 
-func NewTimer(name string, excutor taskexcutor.Excutor) *Timer {
-	if name == "" {
-		name = "TimerExcutor"
+//添加定时事件，事件的回调函数默认第一个参数为 *TimerEvent
+func AddOnceEvent(listener *taskexcutor.TaskService, name string, wait time.Duration) (e *TimerEvent) {
+	return GTimer.AddTimerEvent(listener, name, wait, wait, 1, true)
+}
+
+//添加定时事件，事件的回调函数默认第一个参数为 *TimerEvent
+func AddTimerEvent(listener *taskexcutor.TaskService, name string, initTime, interval time.Duration, count int, absolute bool) (e *TimerEvent) {
+	return GTimer.AddTimerEvent(listener, name, initTime, interval, count, absolute)
+}
+
+func NewTimer(logger *golog.Logger, excutor taskexcutor.Excutor) *Timer {
+	if logger == nil {
+		logger = golog.New("TimerExcutor")
 	}
-	logger := golog.New(name)
 	events := make([]*TimerEvent, 0, 128)
 	events = append(events, &TimerEvent{nextTime: forever})
 	if excutor == nil {
@@ -79,7 +89,7 @@ func (t *Timer) AddOnceEvent(listener *taskexcutor.TaskService, name string, wai
 
 //添加定时事件，事件的回调函数默认第一个参数为 *TimerEvent
 func (t *Timer) AddTimerEvent(listener *taskexcutor.TaskService, name string, initTime, interval time.Duration, count int, absolute bool) (e *TimerEvent) {
-	now := Nanoseconds()
+	now := nanoseconds()
 	init := initTime.Nanoseconds()
 	if init < 0 {
 		init = interval.Nanoseconds()
@@ -122,7 +132,7 @@ func (t *Timer) AddTimerEvent(listener *taskexcutor.TaskService, name string, in
 func (t *Timer) sleeper(sleeperId int64) {
 	t.eventMutex.Lock()
 	e := t.events[0]
-	tm := Nanoseconds()
+	tm := nanoseconds()
 	for e.nextTime != forever {
 		if dt := e.nextTime - tm; dt > 0 {
 			if dt > maxSleepTime {
@@ -136,7 +146,7 @@ func (t *Timer) sleeper(sleeperId int64) {
 			}
 		}
 		e = t.events[0]
-		tm = Nanoseconds()
+		tm = nanoseconds()
 		for tm >= e.nextTime {
 			if e.listener != nil {
 				if tm-e.nextTime >= 2*e.interval {
