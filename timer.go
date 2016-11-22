@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"reflect"
+
 	"github.com/zxfonline/golog"
 	"github.com/zxfonline/taskexcutor"
 )
@@ -47,7 +49,7 @@ func NewTimer(logger *golog.Logger, excutor taskexcutor.Excutor) *Timer {
 	}
 	events := make([]*TimerEvent, 0, 128)
 	events = append(events, &TimerEvent{nextTime: forever})
-	if excutor == nil {
+	if excutor == nil || reflect.ValueOf(excutor).IsNil() {
 		excutor = taskexcutor.NewTaskPoolExcutor(logger, 1, 65536, true, 0)
 	}
 	t := &Timer{Logger: logger, events: events, excutor: excutor}
