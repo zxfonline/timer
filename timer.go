@@ -19,6 +19,11 @@ const (
 	maxSleepTime = 1e9
 )
 
+var (
+	_GTimer  *Timer
+	onceInit sync.Once
+)
+
 func nanoseconds() int64 {
 	return time.Now().UnixNano()
 }
@@ -31,16 +36,23 @@ type Timer struct {
 	currentSleeper int64
 }
 
-var GTimer = NewTimer(nil, nil)
+func GTimer() *Timer {
+	if _GTimer == nil {
+		onceInit.Do(func() {
+			_GTimer = NewTimer(nil, nil)
+		})
+	}
+	return _GTimer
+}
 
 //添加定时事件，事件的回调函数默认第一个参数为 *TimerEvent
 func AddOnceEvent(listener *taskexcutor.TaskService, name string, wait time.Duration) (e *TimerEvent) {
-	return GTimer.AddTimerEvent(listener, name, wait, wait, 1, true)
+	return GTimer().AddTimerEvent(listener, name, wait, wait, 1, true)
 }
 
 //添加定时事件，事件的回调函数默认第一个参数为 *TimerEvent
 func AddTimerEvent(listener *taskexcutor.TaskService, name string, initTime, interval time.Duration, count int, absolute bool) (e *TimerEvent) {
-	return GTimer.AddTimerEvent(listener, name, initTime, interval, count, absolute)
+	return GTimer().AddTimerEvent(listener, name, initTime, interval, count, absolute)
 }
 
 func NewTimer(logger *golog.Logger, excutor taskexcutor.Excutor) *Timer {
