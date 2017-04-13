@@ -1,10 +1,12 @@
 // Copyright 2016 zxfonline@sina.com. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
 package timer
 
 import (
 	"container/heap"
+	"errors"
 	"sync"
 	"time"
 
@@ -45,6 +47,13 @@ func GTimer() *Timer {
 	return _GTimer
 }
 
+func SetGTimer(timer *Timer) {
+	if _GTimer != nil {
+		panic(errors.New("GTimer has been inited."))
+	}
+	_GTimer = timer
+}
+
 //添加定时事件，事件的回调函数默认第一个参数为 *TimerEvent
 func AddOnceEvent(listener *taskexcutor.TaskService, name string, wait time.Duration) (e *TimerEvent) {
 	return GTimer().AddTimerEvent(listener, name, wait, wait, 1, true)
@@ -62,7 +71,7 @@ func NewTimer(logger *golog.Logger, excutor taskexcutor.Excutor) *Timer {
 	events := make([]*TimerEvent, 0, 128)
 	events = append(events, &TimerEvent{nextTime: forever})
 	if excutor == nil || reflect.ValueOf(excutor).IsNil() {
-		excutor = taskexcutor.NewTaskPoolExcutor(logger, 1, 65536, true, 0)
+		excutor = taskexcutor.NewTaskPoolExcutor(logger, 1, 0xFFFF, false, 0)
 	}
 	t := &Timer{Logger: logger, events: events, excutor: excutor}
 	heap.Init(&t.events)
@@ -82,6 +91,11 @@ type TimerEvent struct {
 	listener *taskexcutor.TaskService
 }
 
+//定时器下次执行时间 毫秒
+func (e *TimerEvent) NextTime() int64 {
+	return e.nextTime / 1e6
+}
+
 func (e *TimerEvent) Closed() bool {
 	return e.i < 0
 }
@@ -89,11 +103,15 @@ func (e *TimerEvent) Close() {
 	if e.i < 0 {
 		return
 	}
-	e.t.eventMutex.Lock()
-	if e.i >= 0 {
-		heap.Remove(&e.t.events, e.i)
+	if e.listener != nil {
+		e.listener.Cancel = true
 	}
-	e.t.eventMutex.Unlock()
+	if e.i >= 0 {
+		t := e.t
+		t.eventMutex.Lock()
+		heap.Remove(&e.t.events, e.i)
+		t.eventMutex.Unlock()
+	}
 }
 
 //添加定时事件，事件的回调函数默认第一个参数为 *TimerEvent
