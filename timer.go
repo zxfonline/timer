@@ -71,7 +71,7 @@ func NewTimer(logger *golog.Logger, excutor taskexcutor.Excutor) *Timer {
 	events := make([]*TimerEvent, 0, 128)
 	events = append(events, &TimerEvent{nextTime: forever})
 	if excutor == nil || reflect.ValueOf(excutor).IsNil() {
-		excutor = taskexcutor.NewTaskPoolExcutor(logger, 1, 0xFFFF, false, 0)
+		excutor = taskexcutor.NewTaskPoolExcutor(logger, 1, 10000, false, 0)
 	}
 	t := &Timer{Logger: logger, events: events, excutor: excutor}
 	heap.Init(&t.events)
